@@ -1,14 +1,45 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f766e" />
-    <meta name="description" content="FitBuddy AI Fitness Plan Generator" />
-    <title>FitBuddy — AI Fitness Plan Generator</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}FitBuddy — Generate your plan{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">AI FITNESS PLANNER</p>
+    <h1>Your week.<br><span>Smarter training.</span></h1>
+    <p class="hero-copy">Create a structured 7-day workout plan and a practical nutrition or recovery tip, then refine the plan with feedback.</p>
+  </div>
+  <div class="card form-card">
+    <div class="card-head">
+      <h2>Build your plan</h2>
+      <p>Enter your basic profile to get started.</p>
+    </div>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    <form action="/generate-workout" method="post" id="plan-form">
+      <div class="grid two">
+        <label>Name<input name="username" placeholder="e.g. Alex" required minlength="2" maxlength="120"></label>
+        <label>User ID<input name="user_id" placeholder="e.g. alex01" pattern="[A-Za-z0-9_-]+" required></label>
+        <label>Age<input type="number" name="age" min="13" max="100" placeholder="25" required></label>
+        <label>Weight (kg)<input type="number" name="weight" min="20.1" max="500" step="0.1" placeholder="70" required></label>
+      </div>
+      <div class="grid two">
+        <label>Fitness goal
+          <select name="goal" required>
+            <option value="weight loss">Weight loss</option>
+            <option value="muscle gain">Muscle gain</option>
+            <option value="general wellness" selected>General wellness</option>
+            <option value="flexibility">Flexibility</option>
+          </select>
+        </label>
+        <label>Workout intensity
+          <select name="intensity" required>
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+      </div>
+      <button class="button primary" type="submit" id="submit-button">Generate 7-day plan</button>
+    </form>
+    <p class="fine-print">For wellness support only. Stop if exercise causes pain, dizziness, or other concerning symptoms and seek appropriate professional advice.</p>
+  </div>
+</section>
+{% endblock %}

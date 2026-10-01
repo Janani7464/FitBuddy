@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}FitBuddy — Your plan{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">PERSONALIZED PLAN</p>
+    <h1>{{ user.username }}'s week</h1>
+    <p>{{ user.goal|title }} · {{ user.intensity|title }} intensity · {{ user.weight }} kg</p>
+  </div>
+  <a class="button secondary" href="/">Create another plan</a>
+</section>
+{% if message %}<div class="alert success">{{ message }}</div>{% endif %}
+<div class="profile-strip">
+  <span><b>User ID</b> {{ user.user_id }}</span>
+  <span><b>Age</b> {{ user.age }}</span>
+  <span><b>Goal</b> {{ user.goal|title }}</span>
+  <span><b>Intensity</b> {{ user.intensity|title }}</span>
+</div>
+<section class="plan-title card">
+  <h2>{{ workout_plan.title }}</h2>
+  <p>{{ workout_plan.summary }}</p>
+</section>
+<section class="day-grid">
+  {% for day in workout_plan.days %}
+  <article class="card day-card">
+    <div class="day-top"><span>{{ day.day }}</span><strong>{{ day.focus }}</strong></div>
+    <div class="mini-section"><b>Warm-up</b><p>{{ day.warmup }}</p></div>
+    <div class="exercise-list">
+      {% for ex in day.exercises %}
+      <div class="exercise">
+        <div><strong>{{ ex.name }}</strong><small>{{ ex.reps }} · {{ ex.rest }} rest</small></div>
+        <span>{{ ex.sets }} sets</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mini-section"><b>Cooldown / recovery</b><p>{{ day.cooldown }}</p></div>
+  </article>
+  {% endfor %}
+</section>
+<section class="two-column">
+  <article class="card tip-card">
+    <p class="eyebrow">NUTRITION / RECOVERY</p>
+    <h2>One useful tip</h2>
+    <p>{{ nutrition_tip }}</p>
+  </article>
+  <article class="card feedback-card">
+    <p class="eyebrow">ADAPT YOUR PLAN</p>
+    <h2>What should change?</h2>
+    <p>Examples: “more cardio”, “reduce lower-body volume”, or “add another rest day”.</p>
+    <form action="/submit-feedback" method="post">
+      <input type="hidden" name="user_id" value="{{ user.user_id }}">
+      <textarea name="feedback" rows="5" maxlength="1500" required placeholder="Tell FitBuddy what you want to change..."></textarea>
+      <button class="button primary" type="submit">Update plan with AI</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

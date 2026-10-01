@@ -1,213 +1,224 @@
 # FitBuddy – AI Fitness Plan Generator
 
-A full-stack React + Express application that uses the Google Gemini API to generate a structured, general-purpose fitness plan from user preferences.
+FitBuddy is a FastAPI + Jinja2 + SQLite web application that generates personalized 7-day workout plans and concise nutrition/recovery tips with Google Gemini. Users can submit feedback to regenerate an updated plan, while a coach/admin view can inspect stored users and both plan versions.
 
-## Safety
+The project follows the supplied documentation's architecture: HTML/Jinja2 frontend, FastAPI routing, Gemini-powered AI layer, and SQLAlchemy/SQLite persistence. The original documentation named Gemini 1.5 Pro and Gemini Flash; the implementation keeps the Pro/Flash responsibility split but makes the model IDs configurable because Google's current SDK guidance uses the `google-genai` package and current model IDs.
 
-FitBuddy is intentionally designed for adults (18+). It provides general fitness information, not medical diagnosis, treatment, or individualized medical advice.
+## Features
 
-The generated plan must avoid:
-- Extreme dieting or calorie restriction
-- Dangerous or high-risk exercise instructions
-- Medication or supplement prescriptions
-- Treatment of injuries or medical conditions
-- Body-shaming or appearance-based judgments
-
-If a user has a medical condition, injury, symptoms, or is unsure whether exercise is appropriate, the UI advises them to consult a qualified healthcare professional.
-
-## Stack
-
-- Frontend: React + Vite
-- Backend: Node.js + Express
-- AI: Google Gemini API using `@google/genai`
-- Validation: Zod
-- Security: Helmet
-- CORS: cors
-- Development: concurrently
+- Personalized 7-day workout plan generation
+- Goal options: weight loss, muscle gain, general wellness, flexibility
+- Intensity options: low, medium, high
+- Nutrition/recovery tip generation
+- Feedback-based plan regeneration
+- SQLite persistence with SQLAlchemy 2.x
+- Browser UI with Jinja2 templates
+- JSON API plus automatic OpenAPI/Swagger docs
+- Admin/coach dashboard
+- Optional admin-key protection
+- Local demo fallback when `GEMINI_API_KEY` is not configured
+- Automated pytest coverage for the main user flows
 
 ## Project structure
 
 ```text
-FitBuddy/
-├── backend/
-│   ├── src/
-│   │   ├── config.js
-│   │   ├── middleware/errorHandler.js
-│   │   ├── routes/health.js
-│   │   ├── routes/plan.js
-│   │   ├── services/geminiService.js
-│   │   ├── schemas/planSchema.js
-│   │   ├── utils/prompt.js
-│   │   └── server.js
-│   ├── .env.example
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── styles.css
-│   ├── .env.example
-│   └── package.json
+fitbuddy/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── crud.py
+│   ├── routes.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── gemini_generator.py
+│   │   ├── gemini_flash_generator.py
+│   │   └── updated_plan.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── index.html
+│   │   ├── result.html
+│   │   └── all_users.html
+│   └── static/
+│       ├── css/styles.css
+│       └── js/app.js
+├── data/
+├── tests/test_app.py
 ├── .env.example
 ├── .gitignore
+├── .dockerignore
+├── Dockerfile
+├── pyproject.toml
+├── requirements.txt
 └── README.md
 ```
 
-## Requirements
+## 1. VS Code setup on Windows
 
-- Node.js 20+ recommended
-- A Google Gemini API key from Google AI Studio
-- VS Code
+Install Python 3.11 or newer and VS Code. Open the `fitbuddy` folder in VS Code.
 
-## 1. Open the project
+Create a virtual environment in the VS Code terminal:
 
-Extract/open the `FitBuddy` folder in VS Code.
-
-## 2. Install dependencies
-
-From the project root:
-
-```bash
-npm install
-npm run install:all
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-Or install separately:
+If PowerShell blocks activation, use Command Prompt instead:
 
-```bash
-cd backend
-npm install
-
-cd ../frontend
-npm install
+```bat
+.venv\Scripts\activate.bat
 ```
 
-## 3. Configure Gemini
+Select the `.venv` interpreter in VS Code: `Ctrl+Shift+P` → `Python: Select Interpreter`.
 
-Create:
+## 2. Configure Gemini
 
-```text
-backend/.env
+Copy `.env.example` to `.env`.
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Use the values from `backend/.env.example`:
+Put your Google AI Studio API key in `.env`:
 
-```env
-GEMINI_API_KEY=YOUR_REAL_KEY
-GEMINI_MODEL=gemini-3.8-flash
-PORT=5000
-CLIENT_ORIGIN=http://localhost:5173
+```dotenv
+GEMINI_API_KEY=your_real_key_here
 ```
 
-The Gemini key stays on the backend and is never sent to the browser.
+The defaults use `gemini-3.8-flash` for both generation paths. You can change:
 
-## 4. Run
+```dotenv
+WORKOUT_MODEL=gemini-3.8-flash
+NUTRITION_MODEL=gemini-3.8-flash
+```
 
-From the root:
+If you want to run the whole UI without consuming Gemini API calls, set:
 
-```bash
-npm run dev
+```dotenv
+MOCK_AI=true
+```
+
+With no API key at all, the application also falls back to deterministic demo responses, so the frontend, database, routes, and tests remain runnable.
+
+## 3. Run the application
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload
 ```
 
 Open:
 
-```text
-http://localhost:5173
+- http://127.0.0.1:8000 — FitBuddy UI
+- http://127.0.0.1:8000/docs — Swagger API docs
+- http://127.0.0.1:8000/redoc — ReDoc
+- http://127.0.0.1:8000/view-all-users — admin/coach view
+
+The SQLite database is created automatically at `data/fitbuddy.db` on first startup.
+
+## 4. Test the application
+
+Run all tests:
+
+```powershell
+pytest
 ```
 
-Backend health endpoint:
+The tests use a separate SQLite database and force local mock AI responses, so they do not require a Gemini API key.
 
-```text
-http://localhost:5000/api/health
-```
+You can also test the API interactively from `/docs`.
 
-## 5. Generate a plan
+### Example API request
 
-1. Enter the requested profile information.
-2. The app requires an age of 18 or above.
-3. Choose fitness goal, experience level, days, duration, location, equipment, diet preference, and preferences.
-4. Accept the safety acknowledgement.
-5. Click `Generate My Plan`.
-6. The React frontend calls `POST /api/plan`.
-7. Express validates the request.
-8. The backend sends a constrained prompt and JSON schema to Gemini.
-9. Gemini returns structured JSON.
-10. The backend validates the AI response.
-11. The frontend renders the weekly plan.
-
-## 6. Production build
-
-```bash
-npm run build
-npm start
-```
-
-The backend does not serve the frontend automatically in this starter. For deployment, host the built `frontend/dist` with a static host or configure Express to serve it.
-
-## 7. API
-
-### GET /api/health
-
-Returns:
+`POST /api/generate-workout`
 
 ```json
 {
-  "ok": true,
-  "service": "fitbuddy-api"
-}
-```
-
-### POST /api/plan
-
-Example request:
-
-```json
-{
-  "name": "Alex",
+  "username": "Alex",
+  "user_id": "alex01",
   "age": 25,
-  "gender": "prefer-not-to-say",
-  "heightCm": 170,
-  "weightKg": 65,
-  "goal": "general-fitness",
-  "fitnessLevel": "beginner",
-  "workoutDays": 3,
-  "workoutDuration": 45,
-  "location": "home",
-  "equipment": ["bodyweight", "resistance-bands"],
-  "dietaryPreference": "vegetarian",
-  "preferences": "Prefer low-impact exercises.",
-  "safetyAcknowledgement": true
+  "weight": 70,
+  "goal": "muscle gain",
+  "intensity": "medium"
 }
 ```
 
-## Testing
+Then update the plan with:
 
-Run the backend:
+`POST /api/submit-feedback`
 
-```bash
-cd backend
-npm run dev
+```json
+{
+  "user_id": "alex01",
+  "feedback": "Add more cardio and include another rest day."
+}
 ```
 
-Health check:
+## 5. Optional admin protection
 
-```bash
-curl http://localhost:5000/api/health
+For a simple local demo, `/view-all-users` is open. To require a key, put this in `.env`:
+
+```dotenv
+ADMIN_KEY=change-this-local-key
 ```
 
-Test validation:
+Then visit:
 
-```bash
-curl -X POST http://localhost:5000/api/plan \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"Alex\",\"age\":17,\"gender\":\"prefer-not-to-say\",\"heightCm\":170,\"weightKg\":65,\"goal\":\"general-fitness\",\"fitnessLevel\":\"beginner\",\"workoutDays\":3,\"workoutDuration\":45,\"location\":\"home\",\"equipment\":[\"bodyweight\"],\"dietaryPreference\":\"vegetarian\",\"preferences\":\"\",\"safetyAcknowledgement\":true}"
+```text
+http://127.0.0.1:8000/view-all-users?key=change-this-local-key
 ```
 
-That request should return a validation error because FitBuddy is adult-only.
+Delete operations use the same query-string key.
 
-## Notes about Gemini
+For production, replace this lightweight mechanism with proper authentication, authorization, CSRF protection, and secure secret management.
 
-The backend uses Google's official `@google/genai` JavaScript SDK and structured JSON output. The model name is configurable through `GEMINI_MODEL`.
+## 6. Docker
 
-If a model is unavailable for your API key/project, change `GEMINI_MODEL` to a currently available Gemini model in `backend/.env`.
+Build and run:
+
+```powershell
+docker build -t fitbuddy .
+docker run --rm -p 8000:8000 --env-file .env fitbuddy
+```
+
+Open http://127.0.0.1:8000.
+
+For persistent database storage with Docker, mount the `data` directory as a volume.
+
+## Implementation notes
+
+### AI layer
+
+`app/services/gemini_generator.py` handles structured workout generation. `app/services/gemini_flash_generator.py` generates the concise nutrition/recovery tip. `app/services/updated_plan.py` sends the original structured plan and user feedback back to Gemini and validates the returned JSON with Pydantic.
+
+Structured output is used instead of relying on free-form text formatting. This makes the seven-day plan predictable and directly renderable in Jinja2.
+
+### Persistence
+
+The `users` table stores the requested user fields, the original generated plan, optional updated plan, feedback, and nutrition tip. Both original and updated plans are retained so the admin page can compare versions.
+
+### Safety boundary
+
+FitBuddy is designed as a wellness planning demo, not a medical system. The AI prompt explicitly avoids diagnosis, treatment, and extreme exercise/diet recommendations. The UI also tells users to stop for concerning symptoms and seek appropriate professional advice.
+
+### Production hardening checklist
+
+Before deploying publicly, add:
+
+- Real authentication and role-based authorization
+- CSRF protection for browser forms
+- Rate limiting and abuse controls for AI endpoints
+- HTTPS and secure cookie/session handling if sessions are added
+- Secret management instead of a checked-in `.env`
+- Database migrations with Alembic
+- Structured application logging and monitoring
+- AI request timeouts/retries with bounded backoff
+- Per-user authorization so users cannot read another user's plan by ID
+- Privacy policy and appropriate data retention/deletion controls
+- More comprehensive domain-specific fitness validation

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}FitBuddy — Admin{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">ADMIN / COACH VIEW</p><h1>All users</h1><p>Review stored profiles and original versus updated plans.</p></div>
+  <a class="button secondary" href="/">Back to generator</a>
+</section>
+<div class="card table-card">
+  {% if users %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>User</th><th>Profile</th><th>Original plan</th><th>Updated plan</th><th></th></tr></thead>
+      <tbody>
+      {% for user in users %}
+        <tr>
+          <td><strong>{{ user.username }}</strong><br><small>{{ user.user_id }}</small></td>
+          <td>{{ user.age }} yrs · {{ user.weight }} kg<br>{{ user.goal|title }} · {{ user.intensity|title }}</td>
+          <td><pre>{{ user.original_plan }}</pre></td>
+          <td>{% if user.updated_plan %}<pre>{{ user.updated_plan }}</pre>{% else %}<span class="muted">No update yet</span>{% endif %}</td>
+          <td><form action="/admin/users/{{ user.user_id }}/delete{% if admin_key %}?key={{ admin_key }}{% endif %}" method="post" onsubmit="return confirm('Delete this user?')"><button class="button danger" type="submit">Delete</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<div class="empty">No users have generated a plan yet.</div>{% endif %}
+</div>
+{% endblock %}
